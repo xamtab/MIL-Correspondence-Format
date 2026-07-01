@@ -1329,32 +1329,80 @@ input[type="text"], select {
         color: #000000 !important;
         height: auto !important;
         overflow: visible !important;
+        margin: 0 !important;
+        padding: 0 !important;
     }
 
-    /* Hide everything except the sheet preview */
-    .app-container, .sidebar, .main-content, .panel-header, .converter-grid, 
-    .search-card, .ai-assistant-card, .preview-actions, .paper-container,
-    .editor-card, .tab-panel {
+    /* Hide the sidebar */
+    .sidebar {
         display: none !important;
     }
 
-    /* Show only the page preview, centered and scaled to full print size */
+    /* Hide all tabs first */
+    .tab-panel {
+        display: none !important;
+    }
+
+    /* Show ONLY the generator tab */
     #tab-generator {
         display: block !important;
         padding: 0 !important;
         margin: 0 !important;
     }
-    
+
+    /* Hide the form editor panel and header */
+    .panel-header,
+    .editor-card,
+    .preview-actions {
+        display: none !important;
+    }
+
+    /* Hide Tab 1 and Tab 3 specific content */
+    .converter-grid,
+    .search-card,
+    .ai-assistant-card,
+    .dictionary-card {
+        display: none !important;
+    }
+
+    /* Hide ambiguity popup */
+    .popup-menu {
+        display: none !important;
+    }
+
+    /* Reset app container and main content for print flow */
+    .app-container {
+        display: block !important;
+        height: auto !important;
+        width: auto !important;
+    }
+
+    .main-content {
+        display: block !important;
+        height: auto !important;
+        overflow: visible !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    /* Show the generator grid as block */
     .generator-grid {
         display: block !important;
         height: auto !important;
+        padding: 0 !important;
+        margin: 0 !important;
     }
 
+    /* Show the preview panel */
     .preview-panel {
         display: block !important;
         height: auto !important;
+        min-height: auto !important;
+        padding: 0 !important;
+        margin: 0 !important;
     }
 
+    /* Show the paper container */
     .paper-container {
         display: block !important;
         padding: 0 !important;
@@ -1362,16 +1410,24 @@ input[type="text"], select {
         background-color: transparent !important;
         border: none !important;
         box-shadow: none !important;
+        border-radius: 0 !important;
+        overflow: visible !important;
     }
 
+    /* Paper page - print at full size with proper JSSDM margins */
     .paper-page {
         box-shadow: none !important;
         margin: 0 !important;
-        padding: 0 !important;
+        padding: 30mm 20mm !important;
         width: 100% !important;
         min-height: auto !important;
         position: relative !important;
         page-break-after: always;
+        background-color: #ffffff !important;
+        color: #000000 !important;
+        font-family: Arial, sans-serif !important;
+        font-size: 12pt !important;
+        line-height: 1.5 !important;
     }
 
     /* Hide the dashed left margin print guide in printing */
@@ -1379,8 +1435,66 @@ input[type="text"], select {
         display: none !important;
     }
 
+    /* Ensure document elements print with correct styling */
+    .doc-sec-class, .doc-sec-class-bottom {
+        color: #000000 !important;
+    }
+
+    .doc-precedence {
+        color: #cc0000 !important;
+    }
+
+    .doc-header-table {
+        display: flex !important;
+        justify-content: space-between !important;
+    }
+
+    .doc-ref-date-row {
+        display: flex !important;
+        justify-content: space-between !important;
+    }
+
+    .doc-subject {
+        font-weight: 700 !important;
+        text-decoration: underline !important;
+        text-transform: uppercase !important;
+    }
+
+    .doc-refs {
+        display: flex !important;
+    }
+
+    .doc-body-text {
+        display: flex !important;
+        flex-direction: column !important;
+    }
+
+    .preview-para {
+        display: flex !important;
+        text-align: justify !important;
+    }
+
+    .preview-sub-para {
+        display: flex !important;
+        text-align: justify !important;
+    }
+
+    .doc-signature-block {
+        text-align: left !important;
+        margin-left: auto !important;
+    }
+
+    .doc-distribution {
+        border-top: 1px solid #000000 !important;
+    }
+
+    .dist-col-grid {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+    }
+
     @page {
         size: A4 portrait;
-        margin: 20mm 15mm 20mm 20mm; /* standard print margins */
+        margin: 20mm 15mm 20mm 20mm;
     }
 }

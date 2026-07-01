@@ -169,12 +169,32 @@ function initConverter() {
     document.getElementById('btn-download-word').addEventListener('click', () => {
         const outputText = document.getElementById('converter-output').innerText;
         if (!outputText || outputText.includes('Result will appear here...')) return;
-        const htmlContent = `
-            <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
-            <head><title>MIL-Correspondence-Format</title><style>body { font-family: 'Times New Roman', serif; font-size: 12pt; }</style></head>
-            <body><p style="white-space: pre-line;">${outputText}</p></body>
-            </html>
-        `;
+        const paragraphs = outputText.split('\n').map(line => 
+            `<p style="font-family:'Times New Roman',serif; font-size:12pt; margin:0 0 6pt 0; text-align:justify;">${line || '&nbsp;'}</p>`
+        ).join('\n');
+        const htmlContent = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>MIL-Correspondence-Format</title>
+<!--[if gte mso 9]>
+<xml>
+<w:WordDocument>
+<w:View>Print</w:View>
+<w:Zoom>100</w:Zoom>
+<w:DoNotOptimizeForBrowser/>
+</w:WordDocument>
+</xml>
+<![endif]-->
+<style>
+    @page { size: 21cm 29.7cm; margin: 2.5cm; }
+    body { font-family: 'Times New Roman', serif; font-size: 12pt; line-height: 1.5; color: #000000; }
+    p { font-family: 'Times New Roman', serif; text-align: justify; }
+</style>
+</head>
+<body>
+${paragraphs}
+</body>
+</html>`;
         downloadBlob(htmlContent, 'converted-military-text.doc', 'application/msword');
     });
 
@@ -647,21 +667,7 @@ function initLetterBuilder() {
     
     // Download Word doc
     document.getElementById('btn-download-word-letter').addEventListener('click', () => {
-        const content = document.getElementById('jssdm-letter-page').innerHTML;
-        const pageStyles = `
-            @page { size: 21cm 29.7cm; margin: 3cm 2cm 3cm 2cm; }
-            body { font-family: Arial, sans-serif; font-size: 12pt; }
-            .doc-sec-class { text-align: center; font-weight: bold; }
-            .doc-subject { font-weight: bold; text-decoration: underline; text-transform: uppercase; }
-            .preview-para { display: flex; margin-bottom: 12pt; }
-            .preview-para-num { width: 30pt; }
-        `;
-        const html = `
-            <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
-            <head><style>${pageStyles}</style></head>
-            <body>${content}</body>
-            </html>
-        `;
+        const html = buildWordDocHTML();
         downloadBlob(html, 'military-routine-letter.doc', 'application/msword');
     });
 }
@@ -1244,6 +1250,212 @@ function renderDictionary() {
     if (count === 0) {
         tableBody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:var(--text-muted); padding: 40px 0;"><i class="fa-solid fa-face-frown" style="font-size:24px; display:block; margin-bottom:10px;"></i>No standard JSSDM abbreviations match your filters.</td></tr>`;
     }
+}
+
+/* ==========================================================================
+   Word Document Export Builder
+   Generates Word-compatible HTML with inline styles and tables
+   (Word does not support flexbox/grid, so we use tables for layout)
+   ========================================================================== */
+function buildWordDocHTML() {
+    const sec = document.getElementById('let-security').value;
+    const prec = document.getElementById('let-precedence').value;
+    const copyVal = document.getElementById('let-copy').value;
+    const pagesVal = document.getElementById('let-pages').value;
+    const sender = document.getElementById('let-sender').value;
+    const ref = document.getElementById('let-ref').value;
+    const date = document.getElementById('let-date').value;
+    const subject = document.getElementById('let-subject').value;
+    const sigName = document.getElementById('let-sig-name').value;
+    const sigRank = document.getElementById('let-sig-rank').value;
+    const sigAppt = document.getElementById('let-sig-appt').value;
+    const act = document.getElementById('let-distr-action').value.trim();
+    const info = document.getElementById('let-distr-info').value.trim();
+    const intAct = document.getElementById('let-distr-int-action').value.trim();
+    const intInfo = document.getElementById('let-distr-int-info').value.trim();
+
+    let body = '';
+
+    // --- Top Security Classification (Centered) ---
+    body += `<p style="text-align:center; font-family:Arial,sans-serif; font-weight:bold; font-size:11pt; letter-spacing:1px; margin-bottom:24pt;">${sec}</p>\n`;
+
+    // --- Precedence, Copy, Pages + Sender Address (Table layout: sender left, meta right) ---
+    let metaRight = '';
+    if (prec) metaRight += `<p style="font-family:Arial,sans-serif; font-weight:bold; font-size:12pt; color:#cc0000; margin:0 0 4pt 0;">${prec}</p>`;
+    if (copyVal) metaRight += `<p style="font-family:Arial,sans-serif; font-size:10pt; margin:0 0 2pt 0;">Copy No ${copyVal}</p>`;
+    if (pagesVal) metaRight += `<p style="font-family:Arial,sans-serif; font-size:10pt; margin:0 0 2pt 0;">Total Pages ${pagesVal}</p>`;
+
+    const senderLines = sender.split('\n').map(l => l.trim()).filter(l => l).join('<br>');
+
+    body += `<table style="width:100%; border:none; border-collapse:collapse; margin-bottom:16pt;">
+        <tr>
+            <td style="vertical-align:top; width:50%; padding:0; border:none;">&nbsp;</td>
+            <td style="vertical-align:top; text-align:left; padding:0; border:none;">
+                ${metaRight}
+                <p style="font-family:Arial,sans-serif; font-size:11pt; line-height:1.4; margin-top:8pt;">${senderLines}</p>
+            </td>
+        </tr>
+    </table>\n`;
+
+    // --- Reference Number and Date (Table: ref left, date right) ---
+    body += `<table style="width:100%; border:none; border-collapse:collapse; margin-bottom:16pt;">
+        <tr>
+            <td style="text-align:left; font-family:Arial,sans-serif; font-weight:500; font-size:11pt; padding:0; border:none;">${ref}</td>
+            <td style="text-align:right; font-family:Arial,sans-serif; font-size:11pt; padding:0; border:none;">${date}</td>
+        </tr>
+    </table>\n`;
+
+    // --- Subject Heading (Bold, Underlined, Uppercase) ---
+    if (subject.trim()) {
+        body += `<p style="font-family:Arial,sans-serif; font-weight:bold; font-size:12pt; text-decoration:underline; text-transform:uppercase; margin-bottom:12pt;">${subject.toUpperCase()}</p>\n`;
+    }
+
+    // --- References ---
+    if (letterReferences.length > 0) {
+        body += `<table style="border:none; border-collapse:collapse; margin-bottom:16pt;">
+            <tr>
+                <td style="vertical-align:top; font-family:Arial,sans-serif; font-weight:bold; text-decoration:underline; font-size:11pt; padding:0 12pt 0 0; border:none; white-space:nowrap;">Refs:</td>
+                <td style="vertical-align:top; padding:0; border:none;">`;
+        letterReferences.forEach((refText, idx) => {
+            const letter = String.fromCharCode(65 + idx);
+            body += `<p style="font-family:Arial,sans-serif; font-size:11pt; margin:0 0 4pt 0;">${letter}.&nbsp;&nbsp;&nbsp;&nbsp;${refText}</p>`;
+        });
+        body += `</td></tr></table>\n`;
+    }
+
+    // --- Paragraphs (Body) ---
+    letterParagraphs.forEach((para, idx) => {
+        // Main paragraph: numbered with indentation
+        body += `<table style="width:100%; border:none; border-collapse:collapse; margin-bottom:12pt;">
+            <tr>
+                <td style="vertical-align:top; width:30pt; font-family:Arial,sans-serif; font-size:12pt; font-weight:500; padding:0; border:none;">${idx + 1}.</td>
+                <td style="vertical-align:top; font-family:Arial,sans-serif; font-size:12pt; text-align:justify; padding:0; border:none;">${para.text}</td>
+            </tr>
+        </table>\n`;
+
+        // Sub-paragraphs: lettered with deeper indent
+        if (para.subParas.length > 0) {
+            para.subParas.forEach((subText, subIdx) => {
+                const subLetter = String.fromCharCode(97 + subIdx);
+                body += `<table style="width:100%; border:none; border-collapse:collapse; margin-bottom:6pt; margin-left:30pt;">
+                    <tr>
+                        <td style="vertical-align:top; width:24pt; font-family:Arial,sans-serif; font-size:12pt; padding:0; border:none;">${subLetter}.</td>
+                        <td style="vertical-align:top; font-family:Arial,sans-serif; font-size:12pt; text-align:justify; padding:0; border:none;">${subText}</td>
+                    </tr>
+                </table>\n`;
+            });
+        }
+    });
+
+    // --- Signature Block (Right-aligned) ---
+    body += `<table style="width:100%; border:none; border-collapse:collapse; margin-top:36pt; margin-bottom:24pt;">
+        <tr>
+            <td style="width:55%; border:none;">&nbsp;</td>
+            <td style="vertical-align:top; text-align:left; font-family:Arial,sans-serif; padding:0; border:none;">
+                <p style="font-weight:bold; text-transform:uppercase; margin:0 0 2pt 0; font-size:12pt;">${sigName.toUpperCase()}</p>
+                <p style="margin:0 0 2pt 0; font-size:11pt;">${sigRank}</p>
+                <p style="margin:0; font-size:11pt;">${sigAppt}</p>
+            </td>
+        </tr>
+    </table>\n`;
+
+    // --- Distribution Block ---
+    if (act || info || intAct || intInfo) {
+        body += `<div style="border-top:1px solid #000000; padding-top:12pt; margin-top:12pt; font-family:Arial,sans-serif; font-size:10.5pt;">`;
+        body += `<p style="font-weight:bold; text-decoration:underline; margin-bottom:8pt;">Distribution:</p>`;
+
+        body += `<table style="width:100%; border:none; border-collapse:collapse;">
+            <tr>`;
+
+        // Column 1: External
+        body += `<td style="vertical-align:top; width:50%; padding:0 12pt 0 0; border:none;">`;
+        if (act || info) {
+            body += `<p style="font-weight:600; margin-bottom:4pt;">External:</p>`;
+            if (act) {
+                body += `<p style="text-decoration:underline; margin:0 0 2pt 12pt;">Action:</p>`;
+                act.split('\n').forEach(line => {
+                    body += `<p style="margin:0 0 1pt 12pt;">${line}</p>`;
+                });
+            }
+            if (info) {
+                body += `<p style="text-decoration:underline; margin:8pt 0 2pt 12pt;">Information:</p>`;
+                info.split('\n').forEach(line => {
+                    body += `<p style="margin:0 0 1pt 12pt;">${line}</p>`;
+                });
+            }
+        }
+        body += `</td>`;
+
+        // Column 2: Internal
+        body += `<td style="vertical-align:top; width:50%; padding:0; border:none;">`;
+        if (intAct || intInfo) {
+            body += `<p style="font-weight:600; margin-bottom:4pt;">Internal:</p>`;
+            if (intAct) {
+                body += `<p style="text-decoration:underline; margin:0 0 2pt 12pt;">Action:</p>`;
+                intAct.split('\n').forEach(line => {
+                    body += `<p style="margin:0 0 1pt 12pt;">${line}</p>`;
+                });
+            }
+            if (intInfo) {
+                body += `<p style="text-decoration:underline; margin:8pt 0 2pt 12pt;">Information:</p>`;
+                intInfo.split('\n').forEach(line => {
+                    body += `<p style="margin:0 0 1pt 12pt;">${line}</p>`;
+                });
+            }
+        }
+        body += `</td></tr></table>`;
+        body += `</div>\n`;
+    }
+
+    // --- Bottom Security Classification (Centered) ---
+    body += `<p style="text-align:center; font-family:Arial,sans-serif; font-weight:bold; font-size:11pt; letter-spacing:1px; margin-top:24pt;">${sec}</p>\n`;
+
+    // --- Build the full Word-compatible HTML document ---
+    const fullHTML = `<html xmlns:o="urn:schemas-microsoft-com:office:office"
+      xmlns:w="urn:schemas-microsoft-com:office:word"
+      xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>MIL-Correspondence-Format - JSSDM Letter</title>
+<!--[if gte mso 9]>
+<xml>
+<w:WordDocument>
+<w:View>Print</w:View>
+<w:Zoom>100</w:Zoom>
+<w:DoNotOptimizeForBrowser/>
+</w:WordDocument>
+</xml>
+<![endif]-->
+<style>
+    @page {
+        size: 21cm 29.7cm;
+        margin: 3cm 2cm 3cm 2cm;
+    }
+    body {
+        font-family: Arial, sans-serif;
+        font-size: 12pt;
+        line-height: 1.5;
+        color: #000000;
+    }
+    table {
+        border: none;
+        border-collapse: collapse;
+    }
+    td {
+        border: none;
+        padding: 0;
+    }
+    p {
+        font-family: Arial, sans-serif;
+    }
+</style>
+</head>
+<body>
+${body}
+</body>
+</html>`;
+
+    return fullHTML;
 }
 
 /* ==========================================================================
